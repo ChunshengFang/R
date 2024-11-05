@@ -1,0 +1,311 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+
+# Part 1.   Chunsheng
+## Problem 1: 1. Create dataframe.   2.5 marks 
+```{r}
+doctor_type <- c("PCP","Psychiatrist", "Surgeon", "Anesthesia")
+doctor_lastname <- c("Smith","Dame", "Jones", "Zayas")
+location<- c("MA", "ME","NH","VT")
+AVG_Rating <- c(7, 9, 8, 9)
+Doctor <-data.frame(doctor_type, doctor_lastname, location, AVG_Rating)
+Doctor
+
+```
+## Problem 2: 2. Row and Column Selection.    2.5 marks        Chunsheng
+```{r}
+Doctor[1,2]
+Doctor[2:4,]
+Doctor[,4]
+
+```
+## Problem 3:Use 2 variables in mtcars to create scatterplot.   2.5 marks     Chunsheng
+```{r}
+library(ggplot2)
+names(mtcars)
+ggplot(mtcars, aes(x = mpg, y = wt)) +
+geom_point(aes(colour = factor(gear)),size = 3) +
+xlab("Miles per gallon") +
+ylab("Weight") +
+ggtitle("Relationship between MPG and Weight")
+
+```
+### I picked these variables because they represent two important factors that can impact a car’s performance: fuel efficiency and weight. The relationship between these variables can help us understand the trade-offs that car manufacturers make when designing vehicles, as well as provide insights into how these factors affect a car’s overall performance.
+
+## Problem 4: Summary of mtcars and calculate pearson coefficient calculation and explain the purpose.  2.5 marks        Chunsheng 
+```{r}
+summary(mtcars)
+cor(log10(mtcars$mpg),mtcars$hp,use = "complete.obs")
+
+```
+I chose these variables because they are both important factors in a car’s performance. mpg is fuel efficiency, while hp is the power of the car’s engine. By examining the correlation between these variables, we can understand how fuel efficiency and engine power are related.
+The purpose of the Pearson coefficient of correlation is to measure the linear relationship between two variables. The Pearson coefficient is a standardized measure that ranges from -1 to 1, with 0 indicating no correlation and values closer to -1 or 1 indicating a stronger correlation. This coefficient is useful for examining the strength and direction of the relationship between two variables
+In this case it’s a negative correlation and suggests that cars with more powerful engines tend to have lower fuel efficiency
+
+
+
+## Part 2 
+
+## Question 1    5 marks       Lovely 
+```{r}
+# Load libraries
+library(dplyr)
+library(ggplot2)
+library(psych)
+library(stringr)
+data <- read.csv("https://query.data.world/s/3gtwp2icsrtj5mdoweix56qfhlpq2a?dws=00000", header=TRUE, stringsAsFactors=FALSE)
+data
+colnames(data)
+```
+
+## Question 2   10 marks        Lovely 
+
+```{r}
+#Getting an overview of the structure of the data 
+str(data)
+
+#Checking and counting the null values for each column 
+colSums(is.na(data))
+
+#Checking the summary statistics of the numerical column 
+summary(data$Year)
+summary(data$Admissions)
+
+```
+In this code, we are checking the basic structure of the data, the number of columns and their data type. We are also checking the number of null values for each column which comes to be 0 so we don't have to remove any null values. Moving to the next step is the summary statistics of the numerical columns showing that the data is ranging from the year 2007 to 2017. The admissions column has the wide range of values starting from minimum 1 to maximum 2862. 
+
+
+```{r}
+
+# Checking the distribution of data of the Admissions column 
+ggplot(data, aes(x = Admissions)) +
+  geom_histogram(binwidth = 10, fill = "black", color = "red", alpha = 0.5) +
+  labs(title = "Distribution of data of Admissions", x = "Admissions", y = "Frequency")
+
+
+# Generating the same plot with log transformation
+ggplot(data, aes(x = log(Admissions +1))) +  # Adding 1 here to avoid log(0)
+  geom_histogram(binwidth = 0.2, fill = "blue", color = "black", alpha = 0.5) +
+  labs(title = "Log-Transformed Distribution of Admissions data ", x = "Log(Admissions)", y = "Frequency")
+
+
+```
+By the above plots we are looking at the distribution of the values in the Admissions column. The wide range of values in the admissions column is making the data of Admissions right skewed. 
+
+
+```{r}
+# Making a boxplot to get an idea of outliers visually 
+ggplot(data, aes(x = "", y = Admissions)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(title = "Boxplot for outlier detection", y = "Admissions")
+
+Q1 <- quantile(data$Admissions, 0.25)
+Q3 <- quantile(data$Admissions, 0.75)
+IQR <- Q3 - Q1
+
+# Defining outliers 
+lower_bound <- Q1 - 3 * IQR
+upper_bound <- Q3 + 3 * IQR
+
+# outliers dataframe 
+outliers <- data %>% filter(Admissions < lower_bound | Admissions > upper_bound)
+outliers
+
+```
+In this chunk of the code, we have performed the outlier detection process, where I tried to test the IQR lower/upper bound changing from 1.5 to 3 and it definitely gave a list of outliers but we think that the range of the values is quit high and removing the outliers would lead to loss of significant data. 
+
+
+```{r}
+# Gathering the frequencies of categorical columns 
+table(data$Program.Category)
+table(data$Service.Type)
+table(data$Age.Group)
+table(data$Primary.Substance.Group)
+
+```
+
+This step gives us an estimate of the categories in each categorical column and their frequencies as well. 
+
+
+
+## Question 3     30 marks         Lovely 
+```{r}
+# County data frame
+county <- data.frame(
+  county_code = c('AL', 'AG', 'NY', 'BM', 'CA', 'CY', 'CH', 'CM', 'CN', 'CL', 'CO', 'CR', 'DE', 
+                  'DU', 'ER', 'ES', 'FR', 'FU', 'GE', 'GR', 'HA', 'HE', 'JE', 'LE', 'LI', 'MA', 
+                  'MO', 'MG', 'NA', 'NI', 'ON', 'OD', 'OT', 'OR', 'OL', 'OS', 'OG', 'PU', 'RE', 
+                  'RO', 'SL', 'SA', 'SC', 'SH', 'SY', 'SE', 'ST', 'SU', 'SV', 'TI', 'TO', 'UL', 
+                  'WR', 'WS', 'WA', 'WE', 'WY', 'YA'),
+  county_name = c('Albany', 'Allegany', 'Bronx', 'Broome', 'Cattaraugus', 'Cayuga', 'Chautauqua', 
+                  'Chemung', 'Chenango', 'Clinton', 'Columbia', 'Cortland', 'Delaware', 'Dutchess', 
+                  'Erie', 'Essex', 'Franklin', 'Fulton', 'Genesee', 'Greene', 'Hamilton', 
+                  'Herkimer', 'Jefferson', 'Lewis', 'Livingston', 'Madison', 'Monroe', 'Montgomery', 
+                  'Nassau', 'Niagara', 'Oneida', 'Onondaga', 'Ontario', 'Orange', 'Orleans', 
+                  'Oswego', 'Otsego', 'Putnam', 'Rensselaer', 'Rockland', 'St. Lawrence', 'Saratoga', 
+                  'Schenectady', 'Schoharie', 'Schuyler', 'Seneca', 'Steuben', 'Suffolk', 'Sullivan', 
+                  'Tioga', 'Tompkins', 'Ulster', 'Warren', 'Washington', 'Wayne', 'Westchester', 
+                  'Wyoming', 'Yates')
+)
+
+county
+county %>% distinct(county_code,.keep_all = TRUE)
+```
+
+```{r}
+# Program categories dataframe 
+program_category <- data.frame(
+  program_code = c('CR', 'IP', 'OTP', 'OP', 'RS'),
+  program_category = c('Crisis', 'Inpatient', 'Opioid Treatment Program', 'Outpatient', 'Residential')
+)
+
+program_category %>% distinct(program_category,.keep_all = TRUE)
+
+```
+
+```{r}
+# primary substance groups dataframe 
+primary_substance_group <- data.frame(
+  substance_code = c('A', 'AO', 'CC', 'H', 'MH', 'OO'),
+  primary_substance_group = c('Alcohol', 'All Others', 'Cocaine incl Crack', 'Heroin', 'Marijuana incl Hashish', 'Other Opioids')
+)
+
+primary_substance_group
+primary_substance_group %>% distinct(primary_substance_group,.keep_all = TRUE)
+
+```
+
+```{r}
+# Matching and substituting the codes from the above formed dataframes  
+new_data <- data %>%
+  mutate(County.of.Program.Location = county$county_code[match(County.of.Program.Location, county$county_name)])
+
+new_data <- new_data %>%
+  mutate(Program.Category = program_category$program_code[match(Program.Category, program_category$program_category)])
+
+new_data <- new_data %>%
+  mutate(Primary.Substance.Group = primary_substance_group$substance_code[match(Primary.Substance.Group, primary_substance_group$primary_substance_group)])
+
+data <- data.frame(new_data)
+
+admissions_data <- data.frame(new_data)
+admissions_data
+```
+
+
+## Question 4      15 marks       Chengyue 
+```{r}
+
+# Q4
+# Creating the annual admission function 
+annualAdmissions <- function(data) {
+  # Group the data by Year and calculate the total admissions for each year
+  yearly_totals <- data %>%
+    filter(County.of.Program.Location == "NY") %>%
+    group_by(Year) %>%
+    summarise(Total_Admissions = sum(Admissions))
+
+  # Find the year with the highest admissions
+  max_year <- yearly_totals %>%
+    filter(Total_Admissions == max(Total_Admissions)) %>%
+    pull(Year)
+
+  # Create the line chart
+  ggplot(yearly_totals, aes(x = Year, y = Total_Admissions, label = Total_Admissions)) +
+    geom_line() +
+    geom_point() +
+    geom_text(vjust = 1.2) +
+    annotate("text", x = max_year, y = max(yearly_totals$Total_Admissions), 
+             label = paste("Highest admissions year:", max_year), 
+             hjust = 0, vjust = -0.5, size = 4, color = "blue") +
+    labs(title = "Annual Admissions in New York State",
+         x = "Year",
+         y = "Total Admissions") +
+    scale_x_continuous(breaks = unique(yearly_totals$Year)) +
+    theme_minimal()
+}
+
+# Display the line chart
+annualAdmissions(data)
+```
+Explanation of Result:
+2009 stands out as the year with the highest admissions, indicating that this period might have seen either a peak in program demand or other favorable conditions that boosted admissions.
+The steady decline from 2010 to 2017 suggests a diminishing interest or capacity for the program, possibly due to changing policies, economic factors, or the evolving landscape of educational or program offerings in New York State.
+The sharpest decline in admissions is between 2012 and 2016, with a drop of more than 8,000 admissions, hinting that something significant might have occurred during this period to cause such a reduction.
+
+
+
+## Question 5.      15 marks           Chengyue 
+```{r}
+# Q5
+# Calculate the percentage of admissions for each county
+county_percentages <- data %>%
+  group_by(County.of.Program.Location) %>%
+  summarise(Percentage_Admissions = sum(Admissions) / sum(data$Admissions) * 100) %>%
+  arrange(desc(Percentage_Admissions))
+
+# Select the top 5 counties with the highest admission percentages
+# Select top 6 values because one is NA
+top_5_counties <- head(county_percentages, 6)
+
+# Create a bar chart to visualize the results
+ggplot(top_5_counties, aes(x = reorder(County.of.Program.Location, -Percentage_Admissions), y = Percentage_Admissions)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = sprintf("%.1f%%", Percentage_Admissions)), vjust = -0.5, size = 4) +  
+  labs(title = "Top 5 Counties by Percentage of Admissions",
+       x = "County",
+       y = "Percentage of Admissions") +
+  theme_minimal()
+```
+
+NA county contributes 34.9% of the total admissions, which is the largest share by a significant margin.
+This means that NA County plays a central role in the admissions landscape, contributing more than one-third of the total admissions, significantly outpacing the other counties listed. The next highest contributors are NY with 8.0% of admissions, SU with 7.6%, ER with 5.5%, and WE with 5.1%. These four counties combined contribute about 26.2% of total admissions, while NA County alone contributes more than all of them combined.
+
+
+
+## Question 6.      15 marks             Chengyue 
+```{r}
+# Q6
+# Filter data to match 'Rehab' or 'Rehabilitation'
+new_data_rehab <- new_data[grep("Rehab|Rehabilitation", new_data$Service.Type, ignore.case = TRUE), ]
+
+# Extract the unique age groups
+age_group <- unique(new_data_rehab$Age.Group)
+
+# Identify the most prominent substance in each age group
+most_prominent_substance <- sapply(age_group, function(age) {
+  # Create a table of substances for each age group
+  x <- table(new_data_rehab$Primary.Substance.Group[new_data_rehab$Age.Group == age])
+  
+  # Return the substance with the maximum count for this age group
+  names(which.max(x))
+})
+
+# Create a data frame showing the most prominent substance for each age group
+result <- data.frame(Age_Group = age_group, Most_Prominent_Substance = most_prominent_substance)
+
+# Print the result
+print(result)
+
+```
+Younger populations (Under 18 and 18-24) seem to have mental health issues (MH) as the most prominent concern, whereas adults (from 25 years and older) primarily deal with substance abuse issues related to "A" (Alcohol or another similar substance).
+
+```{r}
+# Q6
+# Create a bar plot to visualize the most prominent substance in each age group
+ggplot(result, aes(x = Age_Group, fill = Most_Prominent_Substance)) +
+  geom_bar() +
+  labs(title = "Most Prominent Substance by Age Group",
+       x = "Age Group",
+       y = "Count",
+       fill = "Substance") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+The plot visually reinforces that mental health issues (MH) are most prominent among the youngest age groups, specifically Under 18 and 18 thru 24.
+Substance A (alcohol) becomes the most prominent substance for all adult age groups (starting from 25 thru 34 and extending through 55 and older).

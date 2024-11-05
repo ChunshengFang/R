@@ -1,0 +1,244 @@
+---
+title: "DA5020.A5.Chunsheng.Fang"
+output: 
+  html_document: default
+  pdf_document: default
+date: "2024-10-06"
+---
+
+
+
+# Problem 1
+# Load XML file directly from URL
+```{r}
+# Set a CRAN mirror explicitly (this avoids the non-interactive error)
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+
+# Install necessary packages if not already installed
+if (!require(RCurl)) install.packages("RCurl")
+if (!require(xml2)) install.packages("xml2")
+if (!require(dplyr)) install.packages("dplyr")
+
+# Load the libraries
+library(RCurl)
+library(xml2)
+library(dplyr)
+
+# URL of the XML file
+url <- "https://www.senate.gov/general/contact_information/senators_cfm.xml"
+
+# Download the XML content using RCurl
+xml_content <- getURL(url)
+
+# Parse the XML content
+xml_parsed <- read_xml(xml_content)
+
+# Extract relevant information from the XML into a data frame
+# We need to extract each senator's details from the XML nodes
+senators <- xml_find_all(xml_parsed, "//member")
+
+# Create a data frame by extracting specific details like first_name, last_name, state, etc.
+senator_data <- tibble(
+  first_name = xml_text(xml_find_all(senators, ".//first_name")),
+  last_name = xml_text(xml_find_all(senators, ".//last_name")),
+  state = xml_text(xml_find_all(senators, ".//state")),
+  party = xml_text(xml_find_all(senators, ".//party")),
+  phone = xml_text(xml_find_all(senators, ".//phone")),
+  address = xml_text(xml_find_all(senators, ".//address"))
+)
+
+# Display the dimensions of the data frame (rows and columns)
+print(dim(senator_data))
+
+# View the first few rows of the data
+print(head(senator_data))
+
+
+```
+# Problem 2
+#Construct a regular expression (regex) to extract only the first, last names, and party (D,R,I) of each senator
+```{r}
+# Regular expression to clean names
+senator_data <- senator_data %>%
+  mutate(
+    # Clean first_name to remove middle initials
+    first_name = sub("^(\\w+)(?:\\s+[A-Z]\\.)?\\s*.*$", "\\1", first_name),
+    # Clean last_name to remove suffixes
+    last_name = sub("^(\\w+)(?:\\s+(Jr|Sr|III|IV|II)\\.?)?$", "\\1", last_name),
+    # Standardize party to D, R, I
+    party = toupper(substr(party, 1, 1))
+  ) %>%
+  select(first_name, last_name, party, state, phone, address)
+
+# Display the dimensions of the cleaned data frame (rows and columns)
+print(dim(senator_data))
+
+# View the first few rows of the cleaned data
+print(head(senator_data))
+```
+# Problem 3
+```{r}
+
+# Clean party names and make them more readable
+senator_data <- senator_data %>%
+  mutate(
+    party = case_when(
+      party == "D" ~ "Democratic Party",
+      party == "R" ~ "Republican Party",
+      party == "I" ~ "Independent Party",
+      TRUE ~ party
+    )
+  )
+
+# Define the function to display senators by state
+senatorsByState <- function(state_abbr) {
+  # Filter the senator_data for the specified state
+  state_senators <- senator_data %>%
+    filter(state == state_abbr)
+
+  # Check if there are any senators for the given state
+  if (nrow(state_senators) > 0) {
+    # Create a message with the senator names and parties
+    senator_list <- apply(state_senators, 1, function(row) {
+      paste(row["first_name"], row["last_name"], "(", row["party"], ")", sep = "")
+    })
+    
+    # Join the names into a single string
+    senators_message <- paste(senator_list, collapse = " and ")
+
+    # Print the message
+    message <- paste("The senators for", state_abbr, "are:", senators_message)
+    print(message)
+  } else {
+    print(paste("No senators found for state:", state_abbr))
+  }
+}
+
+# Example usage
+senatorsByState("MA")  # You can change "MA" to any state abbreviation you want to check.
+
+
+```
+# Problem 4
+```{r}
+# Install the necessary package if not already installed
+if (!require(readr)) {
+  install.packages("readr")
+}
+library(readr)
+# Install necessary packages if not already installed
+if (!require(tidyr)) {
+  install.packages("tidyr")
+}
+if (!require(dplyr)) {
+  install.packages("dplyr")
+}
+
+library(tidyr)
+library(dplyr)
+
+
+# Load the CSV file, skipping the first row and treating the first valid row as the header
+file_path <- "/Users/chunsheng/Desktop/Ratio Of Female To Male Youth Unemployment Rate.csv"
+data <- read_csv(file_path, skip = 2)
+print(colnames(data))
+# Check the structure of the loaded data
+str(data)
+
+# Show the first few rows
+head(data)
+# Reshaping the data: converting year columns into rows
+# Reshaping the data: converting year columns into rows
+tidy_data <- data %>%
+  pivot_longer(
+    cols = starts_with("19") | starts_with("20"),  # Select year columns
+    names_to = "Year",                             # Create 'Year' column
+    values_to = "Value"                            # Create 'Value' column
+  ) %>%
+  rename(
+    `Country Name` = `Country Name`,
+    `Country Code` = `Country Code`,
+    `Indicator Name` = `Indicator Name`,
+    `Indicator Code` = `Indicator Code`
+  )
+
+# Display the first few rows of the reshaped data
+head(tidy_data)
+
+
+# Select only the "Country Name" and "Country Code" columns
+countryname_tibble <- tidy_data %>%
+  select(`Country Name`, `Country Code`) %>%
+  distinct()  # Fixing the parentheses here
+
+# Convert to a tibble
+country_name <- as_tibble(countryname_tibble)
+
+# View the resulting tibble
+print(country_name)  # Print the tibble to see the output
+
+
+# Select only the "Country code", "year" and "value" columns
+indicatordata_tibble <- tidy_data %>% select("Country Code", "Year", "Value") %>%
+distinct()
+# Convert to a tibble
+indicator_data <- as_tibble(indicatordata_tibble)
+# View the resulting tibble
+indicator_data
+
+
+
+```
+
+# Problem 5
+```{r}
+# Load required libraries
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+
+
+
+# Filter the data for the last 20 years
+last_20_years <- 2020 - 20
+filtered_data <- tidy_data %>%
+  filter(Year >= last_20_years)
+
+# Select countries from each continent
+north_america_countries <- c("USA", "CAN", "MEX", "CUB", "JAM")
+asia_countries <- c("CHN", "IND", "JPN", "KOR", "IDN")
+middle_east_countries <- c("ARE", "SAU", "ISR", "IRN", "EGY")
+
+# Create a vector to categorize the countries
+filtered_data <- filtered_data %>%
+  mutate(Continent = case_when(
+    `Country Code` %in% north_america_countries ~ "North America",
+    `Country Code` %in% asia_countries ~ "Asia",
+    `Country Code` %in% middle_east_countries ~ "Middle East",
+    TRUE ~ NA_character_
+  )) %>%
+  filter(!is.na(Continent) & !is.na(Value))
+
+# Plotting the data
+ggplot(filtered_data, aes(x = Year, y = Value, color = `Country Name`, group = `Country Name`)) +
+  geom_line() +
+  labs(title = "Ratio of Female to Male Youth Unemployment Rate",
+       x = "Year",
+       y = "Ratio (Female to Male)",
+       color = "Country") +
+  facet_wrap(~ Continent) +
+  theme_minimal()
+```
+
+##Asia: The ratio of female to male youth unemployment is significantly high in several countries, particularly China and Indonesia. This suggests that young women in these countries face greater challenges in accessing employment compared to their male counterparts.
+##Middle East: Countries like Egypt and Iran show substantial fluctuations in their ratios, indicating instability in female youth employment rates over the past two decades. This might reflect socio-political dynamics affecting women’s participation in the labor force.
+##North America: The ratios for the United States and Canada are notably low and stable, suggesting a more balanced employment scenario for young men and women. This may reflect effective policies promoting gender equality in the job market.
+#Comparative Insights:
+
+#Higher Ratios: Countries with ratios above 100 indicate that young women are significantly disadvantaged in the job market compared to men. For example, the ratios for Egypt and China exceed 200 at times, signaling a critical need for interventions aimed at enhancing female employment.
+#Lower Ratios: Countries like Canada and the United States maintain ratios under 100, suggesting relatively equitable youth unemployment conditions. This could be attributed to better access to education and employment opportunities for young women.
+
+
+
+

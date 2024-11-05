@@ -1,0 +1,141 @@
+---
+title: "DA5020.A3.Chunsheng.Fang"
+output: 
+  pdf_document: default
+  html_document: default
+date: "2024-09-22"
+---
+
+
+```{r}
+
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+if (!require(ggplot2)) install.packages("ggplot2")
+if (!require(dplyr)) install.packages("dplyr")
+
+library(ggplot2)
+library(dplyr)
+
+#problem 2
+install.packages("dplyr")
+install.packages("readr")
+library(dplyr)
+library(readr)
+library(dplyr)
+library(readr)
+
+tripdata_df <- read_csv("/Users/chunsheng/Desktop/2020_Green_Taxi_Trip_Data.csv")
+
+dimensions <- dim(tripdata_df)
+print(paste("Dimensions: ", dimensions[1], "rows and", dimensions[2], "columns"))
+glimpse(tripdata_df)
+summary(tripdata_df)
+missing_values <- colSums(is.na(tripdata_df))
+print("Missing values for each column:")
+print(missing_values)
+
+
+#Problem 3
+library(dplyr)
+library(lubridate)
+
+tripdata_df <- tripdata_df %>%
+  mutate(lpep_pickup_datetime = mdy_hms(lpep_pickup_datetime),
+         lpep_dropoff_datetime = mdy_hms(lpep_dropoff_datetime))
+
+# 1. Check if the pickup and dropoff dates are within February 2020
+invalid_dates <- tripdata_df %>%
+  filter(lpep_pickup_datetime < as.Date("2020-02-01") | lpep_pickup_datetime > as.Date("2020-02-29"))
+
+print(paste("Number of trips with invalid dates (outside February 2020):", nrow(invalid_dates)))
+
+# 2. Check for negative or zero trip distance
+negative_distance <- tripdata_df %>%
+  filter(trip_distance <= 0)
+
+print(paste("Number of trips with zero or negative trip distance:", nrow(negative_distance)))
+
+# 3. Check for unrealistic fare amounts (e.g., negative or zero fare amounts)
+invalid_fares <- tripdata_df %>%
+  filter(fare_amount <= 0)
+
+print(paste("Number of trips with zero or negative fare amounts:", nrow(invalid_fares)))
+
+# 4. Check for missing passenger count
+missing_passenger_count <- tripdata_df %>%
+  filter(is.na(passenger_count))
+
+print(paste("Number of trips with missing passenger count:", nrow(missing_passenger_count)))
+#nswer 3:
+#3.1:Date Range Validation:The code checks whether the pickup times are within the month of February 2020. Any trips occurring before February 1st or after February 29th are considered invalid. You can examine how many records fall outside of this range.Example observation: If the output shows that there are, say, 50 records with pickup times outside of February 2020, these records need further attention or removal.
+#3.2:Negative or Unrealistic Trip Distance:The code checks for any trips with a distance of zero or negative values. This can happen due to erroneous data collection or input errors.Example observation: If 100 trips are found with a trip distance of 0 or negative, this indicates invalid data that could distort analyses of trip lengths or fare calculations.
+#3.3:Unrealistic Fare Amounts:The code filters out any trips where the fare is zero or negative. A negative fare is not possible in real-world scenarios, and a zero fare should be questioned unless the trip was somehow free (such as promotions or errors).Example observation: If the result shows that 30 trips have negative or zero fare amounts, it might indicate data entry issues that need to be corrected before conducting financial analyses.
+#3.: Missing Passenger Count:The code identifies trips where the passenger count is missing. Having no passenger count data may not be common and could signal a missing or incomplete entry.Example observation: If 500 rows are missing passenger count, it could affect any analysis that relies on understanding how many people typically take each trip.
+
+#Problem 4
+library(ggplot2)
+tripdata_df_filtered <- tripdata_df %>%
+  filter(trip_distance > 0 & trip_distance <= 100)
+ggplot(tripdata_df_filtered, aes(x = trip_distance)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  scale_y_log10() +  # Apply log scale to y-axis for better visualization
+  labs(title = "Histogram of Trip Distances", x = "Trip Distance (miles)", y = "Count (log scale)") +
+  theme_minimal()
+print("Problem 4 answer: Observations:Skewness: After creating the histogram, you will likely observe that the data is right-skewed, meaning that most trips have shorter distances, and there are fewer trips with longer distances.
+#Explanation: The histogram shows that the distribution of trip distances is heavily right-skewed, with the majority of trips covering shorter distances (less than 5 miles). The log scale helps to visualize the long tail of the distribution, where only a few trips have very large distances.")
+
+
+#Problme 5
+library(dplyr)
+tip_mean <- mean(tripdata_df$tip_amount, na.rm = TRUE)
+tip_sd <- sd(tripdata_df$tip_amount, na.rm = TRUE)
+distance_mean <- mean(tripdata_df$trip_distance, na.rm = TRUE)
+distance_sd <- sd(tripdata_df$trip_distance, na.rm = TRUE)
+tip_outliers <- tripdata_df %>%
+  filter(tip_amount < (tip_mean - 3 * tip_sd) | tip_amount > (tip_mean + 3 * tip_sd))
+print(paste("Number of outliers detected in tip_amount:", nrow(tip_outliers)))
+distance_outliers <- tripdata_df %>%
+  filter(trip_distance < (distance_mean - 3 * distance_sd) | trip_distance > (distance_mean + 3 * distance_sd))
+print(paste("Number of outliers detected in trip_distance:", nrow(distance_outliers)))
+tripdata_df_cleaned <- tripdata_df %>%
+  filter(tip_amount >= (tip_mean - 3 * tip_sd) & tip_amount <= (tip_mean + 3 * tip_sd))
+print(paste("Number of records after removing tip_amount outliers:", nrow(tripdata_df_cleaned)))
+
+
+#Problem 6
+library(ggplot2)
+library(dplyr)
+distance_mean <- mean(tripdata_df_cleaned$trip_distance, na.rm = TRUE)
+distance_sd <- sd(tripdata_df_cleaned$trip_distance, na.rm = TRUE)
+
+tripdata_df_final <- tripdata_df_cleaned %>%
+  filter(trip_distance >= (distance_mean - 3 * distance_sd) & trip_distance <= (distance_mean + 3 * distance_sd))
+ggplot(tripdata_df_final, aes(x = as.factor(payment_type), y = trip_distance, fill = as.factor(payment_type))) +
+  geom_boxplot() +
+  labs(title = "Relationship Between Trip Distance and Payment Type",
+       x = "Payment Type",
+       y = "Trip Distance (miles)") +
+  theme_minimal() +
+  scale_fill_discrete(name = "Payment Type")  # Set a legend for the payment type
+
+#Problem 7
+#1. Removal of Rows with Missing Data
+install.packages("tidyr")
+library(tidyr)
+tripdata_cleaned <- tripdata_df %>%
+  drop_na()
+print(dim(tripdata_cleaned))
+
+
+#2.Imputation: Replacing Missing Values with the Mean or Median
+# Impute missing values in passenger_count with the median
+tripdata_df$passenger_count[is.na(tripdata_df$passenger_count)] <- median(tripdata_df$passenger_count, na.rm = TRUE)
+
+# Impute missing values in trip_distance with the mean
+tripdata_df$trip_distance[is.na(tripdata_df$trip_distance)] <- mean(tripdata_df$trip_distance, na.rm = TRUE)
+missing_values <- colSums(is.na(tripdata_df))
+print(missing_values)
+
+#Comparison and Recommendation:Removal (Listwise Deletion): This method should only be used if the percentage of missing data is minimal (less than 5%) because it discards information, which could lead to biased results. Imputation: This is the recommended approach for this dataset, as it allows us to retain more data. Mean or median imputation works well for numeric variables like passenger_count and trip_distance. However, if there is a significant relationship between variables, more advanced imputation methods such as predictive imputation (using regression or machine learning models) might be considered. 
+# If the number of passengers is missing, imputing with the median could be reasonable, as most rides are likely to have a single passenger. For missing trip distances, using the mean could be suitable unless there are significant outliers, in which case the median would be a safer choice.

@@ -1,0 +1,147 @@
+---
+title: "DA5020.A6.Chunsheng.Fang"
+output: 
+  pdf_document: default
+  html_document: default
+date: "2024-10-20"
+---
+
+
+#Connect to database
+```{r}
+# Load necessary libraries
+library(DBI)
+library(RSQLite)
+
+# Set working directory (where your SQLite database and CSV file are located)
+setwd("/Users/chunsheng/sqlite")  # Update with your actual path
+
+sqlite <- dbDriver("SQLite")
+conn <- dbConnect(sqlite,"imdb.db")
+
+
+
+
+```
+
+#Check the tables in the database
+```{r}
+as.data.frame(dbListTables(conn))
+```
+#Check the tables in the database
+```{r}
+dbGetQuery(conn, "SELECT AVG(Runtime) AS avg_runtime
+FROM movie_info
+WHERE Genre LIKE '%thriller%'")
+```
+# Problem 1
+
+
+OPEN DATABASE
+sqlite3 imdb.db
+
+.open imdb.db
+
+#1.Create directors table
+
+CREATE TABLE director_info (
+Director_ID INTEGER PRIMARY KEY,
+Director_Name TEXT );
+
+
+#2.Import directors csv to the
+
+.mode csv
+
+.import directors.csv director_info
+
+SELECT * FROM director_info LIMIT 5;
+
+There was a datatype mismatch error, hence I changed director_ID datatype from INT to Numeric
+
+ALTER TABLE director_info MODIFY COLUMN Director_ID Numeric;
+
+# Problem 2
+```{r}
+library(ggplot2)
+#1 Count the number of rows in the movie_info and director_info tables
+dbGetQuery(conn, "SELECT COUNT(*) as row_count FROM movie_info")
+
+dbGetQuery(conn, "SELECT COUNT(*) as row_count FROM director_info")
+
+# 2 How many movies were released between 2010 and 2020 (inclusive)
+
+dbGetQuery(conn, "SELECT COUNT(Release_Year) AS num_movies
+FROM movie_info
+WHERE Release_Year BETWEEN '2010' AND '2020'")
+
+num_movies <- dbGetQuery(conn, "SELECT Release_Year, COUNT(Release_Year) AS num_movies
+FROM movie_info
+WHERE Release_Year BETWEEN '2010' AND '2020'
+GROUP BY Release_Year")
+
+ggplot(num_movies, aes(x = Release_Year, y = num_movies, fill = Release_Year)) +
+geom_bar(stat = "identity", width = 0.5) +
+theme_minimal() +
+labs(x = "Year", y = "Number of movies", fill = "Year") +
+scale_fill_discrete(name = "Year", labels = num_movies$Release_Year) +
+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+#3 What is the minimum, average and maximum ratings for “Action” movies.
+
+dbGetQuery(conn, "SELECT MIN(IMDB_Rating) AS min_rating, AVG(IMDB_Rating) AS avg_rating, MAX(IMDB_Rating) AS max_rating
+FROM movie_info
+WHERE Genre LIKE '%Action%'")
+
+
+#4 What are the 25 highest-grossing movies within the dataset? 
+dbGetQuery(conn, "SELECT Series_Title, Genre, CAST(Gross AS REAL) AS Gross
+FROM movie_info
+WHERE Gross IS NOT NULL
+ORDER BY Gross DESC
+LIMIT 25")
+
+
+
+#5 Which directors have the highest-grossing movies.
+Totalgross <- dbGetQuery(conn, "SELECT d.Director_Name, SUM(m.Gross) AS Total_Gross
+FROM movie_info m
+JOIN director_info d ON m.Director_ID = d.Director_ID
+GROUP BY d.Director_Name
+ORDER BY Total_Gross DESC
+LIMIT 10")
+Totalgross
+
+
+ggplot(Totalgross, aes(x = Director_Name, y = Total_Gross)) +
+geom_bar(stat = "identity") +
+theme_minimal()+
+xlab("Director Name") +
+ylab("Total Gross") +
+ggtitle("Directors with the highest-grossing movies")+
+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+#6 Create a function called verifyDirector() t
+verifyDirector <- function(director_name) {
+# Query the database for the director name
+query <- dbGetQuery(conn, paste("SELECT Director_Name
+FROM director_info
+WHERE Director_Name = '", director_name, "'", sep=""))
+# Check if the director was found
+if (nrow(query) == 0) {
+message(paste("Director", director_name, "not found"))
+} else {
+message(paste("Director", director_name, "found"))
+} }
+# Call the verifyDirector() function with a director name argument
+verifyDirector("Anurag Basu")
+
+verifyDirector("Apeksha udayakumar")
+
+```
+
+
+
+

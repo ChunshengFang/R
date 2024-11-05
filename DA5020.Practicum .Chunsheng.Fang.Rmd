@@ -1,0 +1,195 @@
+---
+title: "DA5020.Practicum 1.Chunsheng.Fang"
+output: 
+  pdf_document: default
+  html_document: default
+date: "2024-10-010"
+---
+install.packages("ggplot2")
+
+
+# Part 1
+## Problem 1: 1. Create dataframe
+```{r}
+doctor_type <- c("PCP","Psychiatrist", "Surgeon", "Anesthesia")
+doctor_lastname <- c("Smith","Dame", "Jones", "Zayas")
+location<- c("MA", "ME","NH","VT")
+AVG_Rating <- c(7, 9, 8, 9)
+Doctor <-data.frame(doctor_type, doctor_lastname, location, AVG_Rating)
+Doctor
+
+```
+## Problem 2: 2. Row and Column Selection
+```{r}
+Doctor[1,2]
+Doctor[2:4,]
+Doctor[,4]
+
+```
+## Problem 3:Use 2 variables in mtcars to create scatterplot
+```{r}
+library(ggplot2)
+names(mtcars)
+ggplot(mtcars, aes(x = mpg, y = wt)) +
+geom_point(aes(colour = factor(gear)),size = 3) +
+xlab("Miles per gallon") +
+ylab("Weight") +
+ggtitle("Relationship between MPG and Weight")
+
+```
+### I picked these variables because they represent two important factors that can impact a car’s performance: fuel efficiency and weight. The relationship between these variables can help us understand the trade-offs that car manufacturers make when designing vehicles, as well as provide insights into how these factors affect a car’s overall performance.
+
+## Problem 4: Summary of mtcars and calculate pearson coefficient calculation and explain the purpose
+```{r}
+summary(mtcars)
+cor(log10(mtcars$mpg),mtcars$hp,use = "complete.obs")
+
+```
+I chose these variables because they are both important factors in a car’s performance. mpg is fuel efficiency, while hp is the power of the car’s engine. By examining the correlation between these variables, we can understand how fuel efficiency and engine power are related.
+The purpose of the Pearson coefficient of correlation is to measure the linear relationship between two variables. The Pearson coefficient is a standardized measure that ranges from -1 to 1, with 0 indicating no correlation and values closer to -1 or 1 indicating a stronger correlation. This coefficient is useful for examining the strength and direction of the relationship between two variables
+In this case it’s a negative correlation and suggests that cars with more powerful engines tend to have lower fuel efficiency
+
+#PART 2
+## Problem 1
+```{r}
+# Install necessary packages
+if (!require(httr)) install.packages("httr")
+if (!require(readr)) install.packages("readr")
+
+# Load libraries
+library(httr)
+library(readr)
+
+# URL of the CSV file
+PATH <- "/Users/chunsheng/Desktop/chemical-dependence-treatment-program-admissions-beginning-2007-1.csv"
+
+ny.cd_df <-read.csv(PATH)
+
+head(ny.cd_df)
+```
+
+## Problem 2
+```{r}
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+if (!require(dplyr))install.packages("dplyr")
+library(dplyr)
+if (!require(psych))install.packages("psych")
+library(psych)
+dim(ny.cd_df)
+glimpse(ny.cd_df)
+summary(ny.cd_df)
+describe(ny.cd_df[1:7])
+sum(is.na(ny.cd_df))
+ny.cd_df <- ny.cd_df %>%
+rename("County_of_Program_Location" = "County.of.Program.Location",
+"Service_Type" = "Service.Type",
+"Program_Category" = "Program.Category",
+"Age_Group" = "Age.Group",
+"Primary_Substance_Group" = "Primary.Substance.Group")
+Adm <- ny.cd_df$Admissions
+#summary of admission column
+summary(Adm)
+#mean of admission column
+meann_Adm <- mean(Adm)
+#Standard deviation of admission column
+Std.Dev <- sd(Adm)
+z <-abs((Adm - meann_Adm)/Std.Dev)
+outliers_Adm <-which(z>3)
+length(outliers_Adm)
+```
+## Problem 3:Structure the data and create four tibbles
+```{r}
+county <- tibble(county_code = c("AL","CA","CN","DE","FR","LE","MG","ON","OL","NY","SL","SY","SV","WR","AG","CY","CL","DU","FU","HE","LI","NA","OD","OS","RE","SA","SE","TI","WS","NY","CH","CO","ER", "GE","JE","MA","NY","OT","OG","NY","SC","ST","TO","WA","BM","CM","CR","ES","GR","NY","MO","NI","OR","PU","RO","SH","SU","UL","WE","WY","YA"),
+County_of_Program_Location = c("Albany","Cattaraugus","Chenango","Delaware","Franklin","Lewis","Montgomery","Oneida","Orleans","Queens","Saint Lawrence",
+"Schuyler","Sullivan","Warren","Allegany","Cayuga","Clinton","Dutchess","Fulton","Herkimer","Livingston","Nassau",
+"Onondaga","Oswego","Rensselaer","Saratoga","Seneca","Tioga","Washington","Bronx","Chautauqua","Columbia","Erie","Genesee","Jefferson","Madison",
+"New York","Ontario","Otsego","Richmond","Schenectady","Steuben","Tompkins","Wayne","Broome","Chemung","Cortland","Essex","Greene","Kings","Monroe",
+"Niagara","Orange","Putnam","Rockland","Schoharie","Suffolk","Ulster","Westchester","Wyoming","Yates"))
+county %>% distinct(County_of_Program_Location,.keep_all = TRUE)
+
+
+Programcategory <- tibble(program_code = c("CR","IN", "OTP","Res", "OP", "SP" ),
+Program_Category = c("Crisis", "Inpatient", "Opioid Treatment Program", "Residential", "Outpatient", "Specialized"))
+Programcategory %>% distinct(program_code,.keep_all = TRUE)
+
+ny.cd_df %>% distinct(Primary_Substance_Group)
+
+Prim_sub_group <- tibble(substance_code = c("H","Al", "M","C", "Oth", "OP", "No"),
+Primary_Substance_Group = c("Heroin", "Alcohol", "Marijuana", "Cocaine", "All Others", "Other Opioids", "None"))
+Prim_sub_group %>% distinct(substance_code,.keep_all = TRUE)
+
+ny.cd_df_new <- merge(x = ny.cd_df, y = county, by = "County_of_Program_Location",all= T)
+ny.cd_df_new <- merge(x = ny.cd_df_new, y = Programcategory, by = "Program_Category",all= T)
+ny.cd_df_new <- merge(x = ny.cd_df_new, y = Prim_sub_group, by = "Primary_Substance_Group",all= T)
+
+# Select the required columns from new dataframe
+Admission_tibble <- ny.cd_df_new %>% select("Year", "county_code", "program_code", "Service_Type", "Age_Group", "substance_code", "Admissions")
+# Convert to a tibble
+Admission <- as_tibble(Admission_tibble)
+# View the resulting tibble
+Admission
+
+
+
+```
+## Problem 4: Admission Data
+```{r}
+annualAdmissions <- function(data) {
+# Aggregate admissions by year
+admissions_by_year <- Admission %>%
+group_by(Year)%>%
+summarise("Admissions" = sum(Admissions))
+# Add annotation for year with highest number of admissions
+max_year <- admissions_by_year[which.max(admissions_by_year$Admissions), "Year"]
+max_admissions <- max(admissions_by_year$Admissions)
+# Create line chart
+ggplot(admissions_by_year, aes(x = Year, y = Admissions)) +
+geom_line() +
+ylab("Number of Admissions") +
+ggtitle("Total Admissions in New York State") }
+# Example usage
+annualAdmissions(Admission)
+
+
+```
+## Problem 5
+```{r}
+
+# Calculate percentage of admissions by county
+ny_data <- ny.cd_df %>%
+group_by(County_of_Program_Location) %>%
+summarize(Percent_Admissions = sum(Admissions)/nrow(ny.cd_df) * 100)
+# Sort data by percentage of admissions in descending order
+ny_data <- ny_data %>%
+arrange(desc(Percent_Admissions))
+ny_data
+
+# Select top 5 counties
+top_counties <- head(ny_data, 5)
+# Create bar chart of top 5 counties by percentage of admissions
+ggplot(top_counties, aes(x = County_of_Program_Location, y = Percent_Admissions)) +
+geom_bar(stat = "identity", fill = "steelblue") +
+labs(x = "County", y = "Percent Admissions", title = "Top 5 Counties by Percentage of Admissions")
+```
+## Problem 6
+```{r}
+# Corrected syntax for checking if stringr is installed and installing if not
+if (!require(stringr)) {
+  install.packages("stringr")
+}
+
+library(stringr)
+rehab_facility <- ny.cd_df %>%
+filter(str_detect(Service_Type, "(R|r)ehab"))
+substance_frequency <- rehab_facility %>%
+group_by(Age_Group) %>%
+count(Primary_Substance_Group)
+substance_frequency
+
+ggplot(substance_frequency, aes(x = Primary_Substance_Group, y = n, fill = Primary_Substance_Group)) +
+geom_bar(stat = "identity") +
+labs(x = "Age Group", y = "Frequency") +
+facet_wrap("Age_Group", scales = "free_y", strip.position = "bottom") +
+theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+```
